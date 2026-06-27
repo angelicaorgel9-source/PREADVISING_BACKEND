@@ -76,7 +76,7 @@ const List = () => {
             <div className="px-4 space-y-1">
 
             {/* Row 1 */}
-            <Link to='/viewGrade' className="block">
+            <Link to="/viewGrade?id=202310010" className="block">
               <div className="flex border bg-[#D9D9D9]/50 border-black hover:bg-gray-200 cursor-pointer h-6 items-center px-2 text-sm">
                 <div className="w-1/4">Rein Paul Asinas</div>
                 <div className="w-1/6 text-center">1A</div>

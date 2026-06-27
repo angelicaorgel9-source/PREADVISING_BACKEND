@@ -20,8 +20,7 @@ class StudentService:
             self.records = []
             self.gen_ave = None
             return self.sections or []
-        except Exception as e:
-            print(f"Failed to load sections: {e}")
+        except Exception:
             raise
 
     async def load_students_by_section(self, section: str) -> List[Dict]:
@@ -33,8 +32,7 @@ class StudentService:
             self.records = []
             self.gen_ave = None
             return self.student_list or []
-        except Exception as e:
-            print(f"Failed to load students: {e}")
+        except Exception:
             raise
 
     def _compute_gen_ave(self, records_list: List[Dict]) -> Optional[float]:
@@ -80,8 +78,7 @@ class StudentService:
                 "records": self.records,
                 "gen_ave": self.gen_ave,
             }
-        except Exception as e:
-            print(f"Failed to load student details: {e}")
+        except Exception:
             raise
 
     def get_sections(self) -> List[Dict]:

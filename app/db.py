@@ -9,7 +9,6 @@ MONGO_URI = os.getenv("MONGO_URI")
 client = MongoClient(MONGO_URI)
 db = client.get_database("school_system")
 
-subjects_col = db.subjects
 schedule_col = db.schedule
 curriculum_col = db.curriculum
 students_col = db.students
@@ -18,5 +17,3 @@ teachers_col = db.teachers
 sections_col = db.sections
 enrollments_col = db.enrollments
 academic_records_col = db.academic_records
-
-print("✅ Connected to MongoDB Atlas: school_system")

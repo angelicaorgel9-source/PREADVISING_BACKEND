@@ -8,7 +8,7 @@ const years = [
   { name: "BSIT 2nd Year" },
   { name: "BSIT 3rd Year" },
   { name: "BSIT 4th Year" },
-  { name: "Irregular Students" }, // ✅ added
+  { name: "Irregular Students", isIrregular: true }, // ✅ Special flag for irregular flow
 ];
 
 const YearLevel = () => {
@@ -34,7 +34,10 @@ const YearLevel = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 max-w-255 mx-auto">
 
           {years.map((year, index) => (
-            <Link to="/section" key={index}>
+            <Link 
+              to={year.isIrregular ? "/irregular-list" : "/section"} 
+              key={index}
+            >
               <div className="bg-[#1C6100] w-full h-41.25 rounded-[15px] p-5 relative text-white shadow-lg hover:bg-green-800 transition-all duration-300 cursor-pointer">
                 
                 <h2 className="text-[25px] font-bold">
@@ -42,7 +45,7 @@ const YearLevel = () => {
                 </h2>
 
                 <p className="text-[14px] font-normal mt-1 opacity-80">
-                  No. of Section
+                  {year.isIrregular ? "Irregular Students" : "No. of Section"}
                 </p>
 
                 <img

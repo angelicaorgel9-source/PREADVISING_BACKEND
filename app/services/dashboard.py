@@ -18,8 +18,7 @@ class DashboardService:
                 "summary": self.summary,
                 "year_levels": self.year_levels
             }
-        except Exception as e:
-            print(f"Failed to load dashboard data: {e}")
+        except Exception:
             raise
 
     def get_summary(self) -> Optional[Dict]:

@@ -13,16 +13,15 @@ class AuthService:
             if os.path.exists(self.user_storage_file):
                 with open(self.user_storage_file, "r") as f:
                     self._user = json.load(f)
-        except Exception as e:
-            print(f"Error loading user session: {e}")
+        except Exception:
             self._user = None
 
     def _save_user_to_storage(self, user_data: Dict):
         try:
             with open(self.user_storage_file, "w") as f:
                 json.dump(user_data, f)
-        except Exception as e:
-            print(f"Error saving user session: {e}")
+        except Exception:
+            pass
 
     async def handle_login(self, api_client, username: str, password: str) -> Dict[str, Any]:
        
@@ -31,8 +30,7 @@ class AuthService:
             self._user = response.get("user")
             self._save_user_to_storage(self._user)
             return self._user
-        except Exception as e:
-            print(f"Login failed: {e}")
+        except Exception:
             raise
 
     def handle_logout(self):

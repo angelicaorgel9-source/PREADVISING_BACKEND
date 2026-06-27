@@ -8,6 +8,7 @@ import Nav from "./navbar/nav.jsx";
 import YearLevel from "./yearLevel/yearLevel.jsx";
 import Section from "./yearLevel/section/section.jsx";
 import List from "./yearLevel/list/list.jsx";
+import IrregularList from "./yearLevel/irregular-list/irregularList.jsx";
 import ViewGrade from "./yearLevel/viewGrade/viewGrade.jsx";
 
 import PreAdvising from "./pre-advising/pre-Advising.jsx";
@@ -156,6 +157,18 @@ function App() {
             </>
           }
         />
+
+        {/* Irregular List */}
+        <Route
+          path="/irregular-list"
+          element={
+            <>
+              <Nav />
+              <IrregularList />
+            </>
+          }
+        />
+
        {/* View Grade */}
         <Route
           path="/viewGrade"

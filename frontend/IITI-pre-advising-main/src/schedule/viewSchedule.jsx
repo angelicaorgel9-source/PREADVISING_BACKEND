@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Close from "../assets/photo/Close.png";
 import ConfirmModal from "./ConfirmModal";
 
@@ -9,6 +9,7 @@ const ViewSchedule = ({ show, onClose, yearSection }) => {
   const [selectedSemester, setSelectedSemester] = useState(
     "1st Semester 2025-2026",
   );
+  const [loading, setLoading] = useState(false);
 
   const scheduleColumns = [
     "code",
@@ -32,27 +33,53 @@ const ViewSchedule = ({ show, onClose, yearSection }) => {
     instructor: "",
   };
 
-  // Separate state for each semester
-  const [firstSemesterRows, setFirstSemesterRows] = useState(
-    Array(10)
-      .fill(null)
-      .map(() => ({ ...emptyRow })),
-  );
-  const [secondSemesterRows, setSecondSemesterRows] = useState(
+  const [rows, setRows] = useState(
     Array(10)
       .fill(null)
       .map(() => ({ ...emptyRow })),
   );
 
-  // Decide which rows to display
-  const rows =
-    selectedSemester === "1st Semester 2025-2026"
-      ? firstSemesterRows
-      : secondSemesterRows;
-  const setRows =
-    selectedSemester === "1st Semester 2025-2026"
-      ? setFirstSemesterRows
-      : setSecondSemesterRows;
+  useEffect(() => {
+    if (!show || !yearSection) return;
+
+    const fetchSchedule = async () => {
+      setLoading(true);
+      try {
+        const sectionParam = encodeURIComponent(yearSection);
+        const semesterParam = encodeURIComponent(selectedSemester);
+        const response = await fetch(
+          `/bridge/schedule/${sectionParam}?semester=${semesterParam}`,
+        );
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed to fetch schedule.");
+        }
+
+        const normalized = (data.data || []).slice(0, 10).map((item) => ({
+          code: item.subjectCode || "",
+          unit: item.unit || "",
+          hours: item.hours || "",
+          time: item.time || "",
+          day: Array.isArray(item.days) ? item.days.join(", ") : item.days || "",
+          room: item.room || "",
+          section: item.section || "",
+          instructor: item.instructor || "",
+        }));
+
+        const filled = [...normalized];
+        while (filled.length < 10) filled.push({ ...emptyRow });
+        setRows(filled);
+      } catch (error) {
+        console.error(error);
+        setRows(Array(10).fill(null).map(() => ({ ...emptyRow })));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchedule();
+  }, [show, yearSection, selectedSemester]);
 
   const handleChange = (index, field, value) => {
     const updated = [...rows];

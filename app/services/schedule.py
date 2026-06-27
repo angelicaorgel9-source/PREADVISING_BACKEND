@@ -10,8 +10,7 @@ class ScheduleService:
         try:
             self.schedule = await self.api_client.get_schedule_by_section(section)
             return self.schedule or []
-        except Exception as e:
-            print(f"Failed to load schedule: {e}")
+        except Exception:
             raise
 
     async def load_all_schedules(self) -> List[Dict]:
@@ -19,8 +18,7 @@ class ScheduleService:
         try:
             self.schedule = await self.api_client.get_all_schedules()
             return self.schedule or []
-        except Exception as e:
-            print(f"Failed to load all schedules: {e}")
+        except Exception:
             raise
 
     def get_schedule(self) -> List[Dict]:

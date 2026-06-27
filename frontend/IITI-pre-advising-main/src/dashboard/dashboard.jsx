@@ -1,12 +1,71 @@
-import React from "react";
+import React, { useState } from "react";
 import "./dashboard.css";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import adminLogo from "./dashboardLOGO/adminLogo.png";
-import studentLogo from "./dashboardLOGO/studentLogo.png";
-import teacherLogo from "./dashboardLOGO/teacherLogo.png";
 import search from "../assets/photo/search.png";
+import { getStudentDetails } from "../../api.js";
 
 function Dashboard() {
+  const [studentName, setStudentName] = useState("");
+  const [studentId, setStudentId] = useState("");
+  const [studentYear, setStudentYear] = useState("");
+  const [studentSection, setStudentSection] = useState("");
+  const [subjectRows, setSubjectRows] = useState([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const displayedSubjectRows = subjectRows.slice(0, 10);
+  const emptySubjectRows = Math.max(0, 10 - displayedSubjectRows.length);
+
+  const handleFetchStudent = async () => {
+    setErrorMessage("");
+    setSubjectRows([]);
+
+    if (!studentName.trim() || !studentId.trim()) {
+      setErrorMessage("Please enter both student name and student number.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const response = await getStudentDetails(studentId.trim());
+      if (!response || !response.success) {
+        setErrorMessage(response?.error || "Student not found.");
+        return;
+      }
+
+      const student = response.data?.student || {};
+      const grades = Array.isArray(response.data?.grades) ? response.data.grades : [];
+
+      if (student.name && student.name.toLowerCase().includes(studentName.trim().toLowerCase()) === false) {
+        // keep result, but note mismatch if name provided doesn't match fetched record
+        setErrorMessage("Student number found, but the entered name does not match the record.");
+      }
+
+      setStudentName(student.name || studentName);
+      setStudentId(student.number || studentId);
+      setStudentYear(student.year_level || "");
+      setStudentSection(student.section || "");
+
+      const normalizedSubjects = grades.map((subject) => ({
+        code: subject.code || subject.subject_code || subject.subjectCode || "",
+        title: subject.title || subject.subject_title || "-",
+        units: subject.units || subject.unit || subject.credit_units || "-",
+        status:
+          subject.status && ["completed", "credited", "passed"].includes(subject.status.toLowerCase())
+            ? "Completed"
+            : "Missing",
+      }));
+
+      setSubjectRows(normalizedSubjects);
+    } catch (error) {
+      setErrorMessage("Unable to load student details.");
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className=" h-full pl-[55%] md:pl-88 font-RB w-full">
       <div>
@@ -112,28 +171,49 @@ function Dashboard() {
             {/* BOTTOM LEFT - Student Info + Subjects */}
             <div className="border rounded-lg p-3.5 flex flex-col gap-2">
               {/* Student Info Fields */}
-              <input
-                type="text"
-                placeholder="Student Name:"
-                className="border rounded-md p-1.5 text-sm w-full"
-              />
-              <input
-                type="text"
-                placeholder="Student ID:"
-                className="border rounded-md p-1.5 text-sm w-full"
-              />
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <input
                   type="text"
-                  placeholder="Year Level:"
-                  className="border rounded-md p-1.5 text-sm w-1/2"
+                  value={studentName}
+                  onChange={(e) => setStudentName(e.target.value)}
+                  placeholder="Student Name:"
+                  className="border rounded-md p-1.5 text-sm w-full"
                 />
                 <input
                   type="text"
-                  placeholder="Section:"
-                  className="border rounded-md p-1.5 text-sm w-1/2"
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="Student ID:"
+                  className="border rounded-md p-1.5 text-sm w-full"
                 />
               </div>
+              <div className="flex gap-2 mt-2">
+                <input
+                  type="text"
+                  value={studentYear}
+                  readOnly
+                  placeholder="Year Level:"
+                  className="border rounded-md p-1.5 text-sm w-1/2 bg-gray-50"
+                />
+                <input
+                  type="text"
+                  value={studentSection}
+                  readOnly
+                  placeholder="Section:"
+                  className="border rounded-md p-1.5 text-sm w-1/2 bg-gray-50"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={handleFetchStudent}
+                className="mt-3 bg-[#1C6100] text-white px-4 py-2 rounded-md"
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Load Student Subjects"}
+              </button>
+              {errorMessage ? (
+                <div className="text-sm text-red-500 mt-2">{errorMessage}</div>
+              ) : null}
 
               {/* Subject Table */}
               <div className="border border-[#D9D9D9]/50 rounded-md overflow-hidden">
@@ -150,29 +230,43 @@ function Dashboard() {
                   </span>
                   <span className="px-2 py-2">Status</span>
                 </div>
-                {/* Sample Rows */}
-                <div className="grid grid-cols-[80px_1fr_60px_100px] text-sm h-8 items-center border-b border-[#D9D9D9]/50">
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center">
-                    CC106
-                  </span>
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center truncate"></span>
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center justify-center"></span>
-                  <span className="px-2 h-full flex items-center justify-center text-green-600">
-                    Completed
-                  </span>
-                </div>
-                <div className="grid grid-cols-[80px_1fr_60px_100px] text-sm h-8 items-center border-b border-[#D9D9D9]/50">
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center"></span>
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center truncate"></span>
-                  <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center justify-center"></span>
-                  <span className="px-2 h-full flex items-center justify-center text-red-500">
-                    Missing
-                  </span>
-                </div>
-                {/* Empty Rows */}
-                {[...Array(4)].map((_, i) => (
+                {displayedSubjectRows.length > 0 ? (
+                  displayedSubjectRows.map((subject, index) => (
+                    <div
+                      key={index}
+                      className="grid grid-cols-[80px_1fr_60px_100px] text-sm h-8 items-center border-b border-[#D9D9D9]/50"
+                    >
+                      <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center">
+                        {subject.code}
+                      </span>
+                      <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center truncate">
+                        {subject.title || "-"}
+                      </span>
+                      <span className="px-2 border-r border-[#D9D9D9]/50 h-full flex items-center justify-center">
+                        {subject.units || "-"}
+                      </span>
+                      <span
+                        className={`px-2 h-full flex items-center justify-center ${
+                          subject.status === "Completed"
+                            ? "text-green-600"
+                            : "text-red-500"
+                        }`}
+                      >
+                        {subject.status || "Missing"}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="grid grid-cols-[80px_1fr_60px_100px] text-sm h-8 items-center border-b border-[#D9D9D9]/50">
+                    <span className="px-2 border-r border-[#D9D9D9]/50 h-full" />
+                    <span className="px-2 border-r border-[#D9D9D9]/50 h-full" />
+                    <span className="px-2 border-r border-[#D9D9D9]/50 h-full" />
+                    <span className="px-2 h-full" />
+                  </div>
+                )}
+                {[...Array(emptySubjectRows)].map((_, i) => (
                   <div
-                    key={i}
+                    key={`empty-${i}`}
                     className="grid grid-cols-[80px_1fr_60px_100px] text-sm h-8 items-center border-b border-[#D9D9D9]/50"
                   >
                     <span className="px-2 border-r border-[#D9D9D9]/50 h-full" />

@@ -1,111 +1,79 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import back from "../../assets/photo/arrow.png";
 import adminLogo from "../../dashboard/dashboardLOGO/adminLogo.png";
+import { getStudentDetails } from "../../api.js";
 
 
 const StudentGrades = () => {
-  // useState for student info
-  const [studentName, setStudentName] = useState("Rein Paul C. Asinas");
-  const [yearSection, setYearSection] = useState("BSIT 1A");
-  const [studentNumber, setStudentNumber] = useState("202310010");
-  const [selectedSemester, setSelectedSemester] = useState("1st Semester 2023 - 2024");
+  const [searchParams] = useSearchParams();
+  const studentId = searchParams.get("id") || "";
 
-  const subjects = [
-    {
-      code: "Subject Code 1",
-      instructor: "Marvic Ablaza",
-      prelim: "1.50",
-      midterm: "1.00",
-      preFinal: "1.25",
-      final: "1.25",
-      finalGrade: "1.25",
-    },
-    {
-      code: "Subject Code 2",
-      instructor: "Joel Malapira",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 3",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 4",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-       {
-      code: "Subject Code 4",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },    
-     
-    {
-      code: "Subject Code 5",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 6",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 7",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 8",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    {
-      code: "Subject Code 9",
-      instructor: "Instructor Name",
-      prelim: "",
-      midterm: "",
-      preFinal: "",
-      final: "",
-      finalGrade: "",
-    },
-    
-  ];
+  const [studentName, setStudentName] = useState("");
+  const [yearSection, setYearSection] = useState("");
+  const [studentNumber, setStudentNumber] = useState("");
+  const [selectedSemester, setSelectedSemester] = useState("1st Semester 2023 - 2024");
+  const [subjects, setSubjects] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!studentId) {
+      setError("No student id provided.");
+      setStudentName("");
+      setYearSection("");
+      setStudentNumber("");
+      setSubjects([]);
+      return;
+    }
+
+    const fetchStudent = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await getStudentDetails(studentId);
+        if (!response || !response.success) {
+          setError(response?.error || "Unable to load student details.");
+          setSubjects([]);
+          return;
+        }
+
+        const student = response.data?.student || {};
+        const grades = Array.isArray(response.data?.grades) ? response.data.grades : [];
+
+        setStudentName(student.name || student.full_name || "");
+        setStudentNumber(student.number || student.student_no || student.student_number || studentId);
+        const status = (student.status || "").toLowerCase();
+        setYearSection(status === "irregular" ? "Irregular" : student.section || "");
+
+        setSelectedSemester(
+          grades.length > 0
+            ? grades[0].semester || grades[0].semesters || "1st Semester 2023 - 2024"
+            : "1st Semester 2023 - 2024"
+        );
+
+        const normalized = grades.map((subject) => ({
+          code: subject.code || subject.subject_code || subject.subjectCode || "",
+          instructor: subject.instructor || subject.teacher || "",
+          prelim: subject.prelim || subject.prelim_grade || "",
+          midterm: subject.midterm || subject.midterm_grade || "",
+          preFinal: subject.preFinal || subject.pre_final || "",
+          final: subject.final || subject.final_period || "",
+          finalGrade: subject.finalGrade || subject.grade || subject.final_grade || "",
+        }));
+
+        setSubjects(normalized);
+      } catch (err) {
+        setError("Unable to load student details.");
+        setSubjects([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudent();
+  }, [studentId]);
 
   return (
     <div className="h-full pl-[55%] md:pl-88 font-RB w-full bg-[#F5F5F5] min-h-screen">
@@ -163,6 +131,16 @@ const StudentGrades = () => {
             Student Id : <span className="ml-2">{studentNumber}</span>
           </div>
         </div>
+
+        {error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
+            {error}
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="text-center py-6 text-gray-500">Loading student grades...</div>
+        ) : null}
 
         {/* Table Header */}
         <div className="grid grid-cols-6 text-center text-sm mb-6 px-2">

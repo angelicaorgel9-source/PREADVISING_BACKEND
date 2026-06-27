@@ -11,8 +11,7 @@ class ProfileService:
         try:
             self.profile = await self.api_client.get_profile()
             return self.profile
-        except Exception as e:
-            print(f"Failed to load profile: {e}")
+        except Exception:
             raise
 
     async def update_profile(self, updates: Dict[str, str]) -> Dict[str, Any]:
@@ -20,8 +19,7 @@ class ProfileService:
         try:
             self.profile = await self.api_client.update_profile(updates)
             return self.profile
-        except Exception as e:
-            print(f"Failed to update profile: {e}")
+        except Exception:
             raise
 
     async def upload_profile_pic(self, file_path: str) -> Dict[str, Any]:
@@ -32,8 +30,7 @@ class ProfileService:
         try:
             self.profile = await self.api_client.upload_profile_pic(file_path)
             return self.profile
-        except Exception as e:
-            print(f"Failed to upload profile picture: {e}")
+        except Exception:
             raise
 
     async def delete_profile_pic(self) -> Dict[str, Any]:
@@ -41,8 +38,7 @@ class ProfileService:
         try:
             self.profile = await self.api_client.delete_profile_pic()
             return self.profile
-        except Exception as e:
-            print(f"Failed to delete profile picture: {e}")
+        except Exception:
             raise
 
     def get_profile(self) -> Optional[Dict]:
