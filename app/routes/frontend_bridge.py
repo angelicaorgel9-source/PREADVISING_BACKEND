@@ -649,3 +649,112 @@ async def test_user():
         user["_id"] = str(user["_id"])
         return {"found": True, "data": dict(user)}
     return {"found": False}
+
+
+@router.post("/upload-grades")
+async def bridge_upload_grades(file: UploadFile = File(...)) -> Dict[str, Any]:
+    try:
+        import io
+        import csv
+
+        filename = file.filename or ""
+        content  = await file.read()
+
+        rows = []
+
+        if filename.endswith(".csv"):
+            decoded = content.decode("utf-8-sig")
+            reader  = csv.DictReader(io.StringIO(decoded))
+            rows    = [row for row in reader]
+
+        elif filename.endswith(".xlsx") or filename.endswith(".xls"):
+            try:
+                import openpyxl
+                wb   = openpyxl.load_workbook(io.BytesIO(content))
+                ws   = wb.active
+                headers = [str(cell.value).strip() if cell.value is not None else "" for cell in ws[1]]
+                for row in ws.iter_rows(min_row=2, values_only=True):
+                    rows.append(dict(zip(headers, [str(v) if v is not None else "" for v in row])))
+            except ImportError:
+                return {"success": False, "error": "openpyxl is not installed. Run: pip install openpyxl"}
+
+        else:
+            return {"success": False, "error": "Unsupported file type. Please upload a .csv or .xlsx file."}
+
+        if not rows:
+            return {"success": False, "error": "File is empty or has no data rows."}
+
+        updated = 0
+        inserted = 0
+        errors = []
+
+        for i, row in enumerate(rows):
+            student_no = (
+                row.get("student_no") or row.get("student_number") or
+                row.get("Student No") or row.get("Student Number") or
+                row.get("ID") or ""
+            ).strip()
+
+            subject_code = (
+                row.get("subject_code") or row.get("code") or
+                row.get("Subject Code") or row.get("Code") or ""
+            ).strip()
+
+            if not student_no or not subject_code:
+                errors.append(f"Row {i+2}: missing student_no or subject_code")
+                continue
+
+            grade_record = {
+                "subject_code": subject_code,
+                "grade":        row.get("grade") or row.get("final_grade") or row.get("Grade") or "",
+                "status":       row.get("status") or row.get("Status") or "completed",
+                "school_year":  row.get("school_year") or row.get("School Year") or "",
+                "semesters":    row.get("semesters") or row.get("semester") or row.get("Semester") or "",
+                "prelim":       row.get("prelim") or row.get("Prelim") or "",
+                "midterm":      row.get("midterm") or row.get("Midterm") or "",
+                "preFinal":     row.get("preFinal") or row.get("pre_final") or row.get("Pre-Final") or "",
+                "final":        row.get("final") or row.get("Final") or "",
+            }
+
+            existing = academic_records_col.find_one({
+                "$or": [
+                    {"student_no": student_no},
+                    {"number": student_no},
+                    {"student_number": student_no},
+                ]
+            })
+
+            if existing:
+                records = existing.get("records") or []
+                
+                found = False
+                for rec in records:
+                    if rec.get("subject_code", "").upper() == subject_code.upper():
+                        rec.update(grade_record)
+                        found = True
+                        break
+                if not found:
+                    records.append(grade_record)
+
+                academic_records_col.update_one(
+                    {"_id": existing["_id"]},
+                    {"$set": {"records": records}}
+                )
+                updated += 1
+            else:
+                academic_records_col.insert_one({
+                    "student_no": student_no,
+                    "records": [grade_record]
+                })
+                inserted += 1
+
+        return {
+            "success": True,
+            "message": f"Upload complete. {updated} student(s) updated, {inserted} new record(s) inserted.",
+            "updated": updated,
+            "inserted": inserted,
+            "errors": errors,
+        }
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
